@@ -61,18 +61,19 @@ class SensorRepository @Inject constructor(
         // Implementation handled by SensorService
     }
 
-    private fun TremorEntity.toDomainModel() = TremorReading(
-        timestamp = LocalDateTime.now(),
-        tpiScore = tpiScore,
-        severityLevel = tpiScore / 10f,
-        dominantFrequency = dominantFrequency,
-        bandPower3_7 = bandPower3_7,
-        bandPower8_12 = bandPower8_12,
-        rmsAmplitude = rmsAmplitude,
-        severity = com.parkinson.watch.domain.model.TremorSeverity.entries.first {
-            it.ordinal == severityLevel.toInt()
-        }
-    )
+    private fun TremorEntity.toDomainModel(): TremorReading {
+        val severityLvl = (tpiScore / 10f).toInt().coerceIn(0, 4)
+        return TremorReading(
+            timestamp = LocalDateTime.now(),
+            tpiScore = tpiScore,
+            severityLevel = tpiScore / 10f,
+            dominantFrequency = dominantFrequency,
+            bandPower3_7 = bandPower3_7,
+            bandPower8_12 = bandPower8_12,
+            rmsAmplitude = rmsAmplitude,
+            severity = com.parkinson.shared.domain.model.TremorSeverity.entries[severityLvl]
+        )
+    }
 
     private fun TremorReading.toEntity() = TremorEntity(
         timestamp = System.currentTimeMillis(),

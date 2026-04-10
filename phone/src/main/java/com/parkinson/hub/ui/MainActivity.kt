@@ -32,7 +32,6 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import com.parkinson.hub.ui.screens.DashboardScreen
 import com.parkinson.hub.ui.screens.IAChatScreen
 import com.parkinson.hub.ui.screens.LogEntryScreen
 import com.parkinson.hub.ui.screens.SettingsScreen

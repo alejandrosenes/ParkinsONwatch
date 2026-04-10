@@ -19,9 +19,9 @@ interface SleepDao {
     suspend fun insertSleepSession(session: SleepSessionEntity)
 
     @Query("""
-        SELECT AVG(efficiency_percent) as avgEfficiency,
-               AVG(rbd_proxy_score) as avgRbd,
-               SUM(rem_minutes + n1_minutes + n2_minutes + n3_minutes) as totalSleepMinutes
+        SELECT AVG(efficiencyPercent) as avgEfficiency,
+               AVG(rbdProxyScore) as avgRbd,
+               SUM(remMinutes + n1Minutes + n2Minutes + n3Minutes) as totalSleepMinutes
         FROM sleep_sessions 
         WHERE date >= :startDay AND date <= :endDay
     """)

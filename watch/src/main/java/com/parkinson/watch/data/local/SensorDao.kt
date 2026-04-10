@@ -21,13 +21,15 @@ data class RealTimeMetricsData(
 )
 
 data class DailySummaryData(
-    val avgTremor: Float,
-    val avgHeartRate: Int,
-    val sleepEfficiency: Int,
-    val lastMedicationTime: String?,
-    val tremorByHour: Map<Int, Float>?,
-    val hrByHour: Map<Int, Int>?,
-    val medsByHour: List<Int>?
+    val avgTremor: Float?,
+    val avgHeartRate: Int?,
+    val sleepEfficiency: Int?,
+    val lastMedicationTime: String?
+)
+
+data class TremorByHourData(
+    val tpiScore: Float,
+    val hour: Int
 )
 
 @Dao
@@ -58,20 +60,20 @@ interface SensorDao {
 
     @Query("""
         SELECT 
-            (SELECT AVG(tpi_score) FROM tremor_readings WHERE timestamp >= :startOfDay AND timestamp < :endOfDay) as avgTremor,
+            (SELECT AVG(tpiScore) FROM tremor_readings WHERE timestamp >= :startOfDay AND timestamp < :endOfDay) as avgTremor,
             (SELECT AVG(bpm) FROM heart_rate_readings WHERE timestamp >= :startOfDay AND timestamp < :endOfDay) as avgHeartRate,
-            (SELECT efficiency_percent FROM sleep_sessions WHERE date = :date LIMIT 1) as sleepEfficiency,
-            (SELECT strftime('%H:%M', datetime(last_taken / 1000, 'unixepoch')) FROM medication_log ORDER BY timestamp DESC LIMIT 1) as lastMedicationTime
+            (SELECT efficiencyPercent FROM sleep_sessions WHERE date = :date LIMIT 1) as sleepEfficiency,
+            (SELECT strftime('%H:%M', datetime(timestamp / 1000, 'unixepoch')) FROM medication_log WHERE timestamp >= :startOfDay AND timestamp < :endOfDay ORDER BY timestamp DESC LIMIT 1) as lastMedicationTime
     """)
-    suspend fun getDailySummary(startOfDay: Long, endOfDay: Long): DailySummaryData
+    suspend fun getDailySummary(startOfDay: Long, endOfDay: Long, date: Long): DailySummaryData
 
     @Query("""
-        SELECT tpi_score, (timestamp / 3600000) as hour
+        SELECT tpiScore as tpiScore, (timestamp / 3600000) as hour
         FROM tremor_readings 
         WHERE timestamp >= :startOfDay AND timestamp < :endOfDay
         GROUP BY hour
     """)
-    suspend fun getTremorByHour(startOfDay: Long, endOfDay: Long): List<Pair<Int, Float>>
+    suspend fun getTremorByHour(startOfDay: Long, endOfDay: Long): List<TremorByHourData>
 
     fun getLatestMetrics(): Flow<RealTimeMetricsData?> {
         return kotlinx.coroutines.flow.combine(

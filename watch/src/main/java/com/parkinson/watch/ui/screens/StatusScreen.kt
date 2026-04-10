@@ -186,8 +186,8 @@ fun TremorIndicator(
             Spacer(modifier = Modifier.height(8.dp))
 
             Box(contentAlignment = Alignment.Center) {
-                CircularProgressIndicator(
-                    progress = { animatedSeverity / 10f },
+                androidx.compose.material3.CircularProgressIndicator(
+                    progress = animatedSeverity / 10f,
                     modifier = Modifier.size(100.dp),
                     color = statusColor,
                     trackColor = MaterialTheme.colorScheme.surfaceVariant,

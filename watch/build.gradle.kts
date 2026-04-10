@@ -56,6 +56,13 @@ android {
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
+            excludes += "/META-INF/INDEX.LIST"
+            excludes += "/META-INF/DEPENDENCIES"
+            excludes += "/META-INF/io.netty.versions.properties"
+            excludes += "/META-INF/ NOTICE.txt"
+            excludes += "/META-INF/ LICENSE.txt"
+            excludes += "/META-INF/ CHANGELOG.txt"
+            excludes += "/META-INF/ **/*.kotlin_module"
         }
     }
 }
@@ -75,6 +82,7 @@ dependencies {
     implementation("androidx.compose.material3:material3")
     implementation("androidx.compose.material:material-icons-extended")
     implementation("androidx.navigation:navigation-compose:2.7.6")
+    implementation("androidx.wear.compose:compose-material:1.3.0")
 
     implementation("androidx.room:room-runtime:2.6.1")
     implementation("androidx.room:room-ktx:2.6.1")
@@ -94,11 +102,8 @@ dependencies {
     implementation("io.ktor:ktor-server-content-negotiation:2.3.7")
     implementation("io.ktor:ktor-serialization-kotlinx-json:2.3.7")
 
-    implementation("com.polidea.rxandroidble3:rxandroidble:1.5.4")
-
     implementation("org.tensorflow:tensorflow-lite:2.14.0")
 
-    implementation("com.google.code.gson:gson:2.10.1")
     implementation("com.google.code.gson:gson:2.10.1")
 
     testImplementation("junit:junit:4.13.2")

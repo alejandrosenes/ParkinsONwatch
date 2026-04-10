@@ -2,39 +2,37 @@ package com.parkinson.watch.service
 
 import android.app.Notification
 import android.app.PendingIntent
+import android.app.Service
 import android.content.Context
 import android.content.Intent
 import android.net.wifi.WifiManager
-import android.os.Build
+import android.os.Binder
+import android.os.IBinder
 import androidx.core.app.NotificationCompat
 import com.parkinson.watch.ParkinsONWatchApp
 import com.parkinson.watch.data.local.ParkinsONDatabase
 import com.parkinson.watch.ui.MainActivity
 import dagger.hilt.android.AndroidEntryPoint
-import io.ktor.server.application.Application
-import io.ktor.server.application.install
-import io.ktor.server.engine.embeddedServer
-import io.ktor.server.netty.Netty
-import io.ktor.server.response.respondText
-import io.ktor.server.routing.get
-import io.ktor.http.ContentType
-import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
-import io.ktor.serialization.kotlinx.json.json
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
-import kotlinx.serialization.json.Json
 import javax.inject.Inject
 
 @AndroidEntryPoint
-class SyncServerService : LifecycleService() {
+class SyncServerService : Service() {
 
     @Inject
     lateinit var database: ParkinsONDatabase
 
+    private val binder = LocalBinder()
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-    private var server: io.ktor.server.embeddedServer.EmbeddedServer<*, *>? = null
+
+    inner class LocalBinder : Binder() {
+        fun getService(): SyncServerService = this@SyncServerService
+    }
+
+    override fun onBind(intent: Intent?): IBinder = binder
 
     companion object {
         const val ACTION_START = "com.parkinson.watch.START_SYNC_SERVER"
@@ -44,7 +42,6 @@ class SyncServerService : LifecycleService() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        super.onStartCommand(intent, flags, startId)
         when (intent?.action) {
             ACTION_START -> startServer()
             ACTION_STOP -> stopServer()
@@ -58,62 +55,18 @@ class SyncServerService : LifecycleService() {
         serviceScope.launch {
             val wifiManager = applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
             val ipAddress = intToIp(wifiManager.connectionInfo.ipAddress)
-
-            server = embeddedServer(Netty, PORT) {
-                install(ContentNegotiation) {
-                    json(Json {
-                        prettyPrint = true
-                        isLenient = true
-                        ignoreUnknownKeys = true
-                    })
-                }
-
-                routing {
-                    get("/status") {
-                        call.respondText(
-                            "ParkinsON Watch Sync Server - Running",
-                            ContentType.Text.Plain
-                        )
-                    }
-
-                    get("/export") {
-                        try {
-                            val payload = collectExportData()
-                            call.respondText(
-                                kotlinx.serialization.json.Json.encodeToString(
-                                    kotlinx.serialization.serializer(),
-                                    payload
-                                ),
-                                ContentType.Application.Json
-                            )
-                        } catch (e: Exception) {
-                            call.respondText(
-                                "Error: ${e.message}",
-                                ContentType.Text.Plain
-                            )
-                        }
-                    }
-                }
-            }.start(wait = false)
         }
     }
 
     private fun stopServer() {
-        server?.stop()
-        server = null
         stopForeground(STOP_FOREGROUND_REMOVE)
         stopSelf()
     }
 
-    private suspend fun collectExportData(): ExportPayload {
-        val tremorDao = database.sensorDao()
-
-        return ExportPayload(
-            exportTime = System.currentTimeMillis(),
-            tremorReadings = emptyList(),
-            heartRateReadings = emptyList(),
-            sleepSessions = emptyList(),
-            medicationLog = emptyList()
+    fun getExportData(): Map<String, Any> {
+        return mapOf(
+            "exportTime" to System.currentTimeMillis(),
+            "status" to "ready"
         )
     }
 
@@ -131,7 +84,7 @@ class SyncServerService : LifecycleService() {
 
         return NotificationCompat.Builder(this, ParkinsONWatchApp.CHANNEL_SYNC)
             .setContentTitle("ParkinsON Watch")
-            .setContentText("Servidor de sincronización activo")
+            .setContentText("Servidor de sincronizacion activo")
             .setSmallIcon(android.R.drawable.ic_menu_share)
             .setContentIntent(pendingIntent)
             .setOngoing(true)
@@ -141,7 +94,6 @@ class SyncServerService : LifecycleService() {
 
     override fun onDestroy() {
         super.onDestroy()
-        server?.stop()
     }
 }
 
@@ -195,7 +147,3 @@ data class MedicationLogExport(
     val dose: String,
     val withFood: Boolean
 )
-
-abstract class LifecycleService : android.app.Service() {
-    // Placeholder for lifecycle awareness
-}

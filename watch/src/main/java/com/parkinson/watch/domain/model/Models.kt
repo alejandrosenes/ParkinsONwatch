@@ -1,5 +1,6 @@
 package com.parkinson.watch.domain.model
 
+import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.LocalTime
 
@@ -50,7 +51,10 @@ data class MedicationSchedule(
     val dose: String,
     val scheduleTimes: List<LocalTime>,
     val lastTaken: LocalDateTime?
-)
+) {
+    val isTakenToday: Boolean
+        get() = lastTaken?.toLocalDate() == LocalDate.now()
+}
 
 data class MedicationEntry(
     val id: Long,

@@ -34,7 +34,7 @@ interface HealthDao {
     @Query("SELECT * FROM exercise_sessions ORDER BY startTimestamp DESC LIMIT 10")
     fun getRecentExerciseSessions(): Flow<List<ExerciseSessionEntity>>
 
-    @Query("SELECT * FROM exercise_sessions WHERE startTimestamp >= :startTime AND endTimestamp IS NULL LIMIT 1")
+    @Query("SELECT * FROM exercise_sessions WHERE endTimestamp IS NULL LIMIT 1")
     suspend fun getActiveExerciseSession(): ExerciseSessionEntity?
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
@@ -49,37 +49,11 @@ interface HealthDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertVoiceNote(note: VoiceNoteEntity)
 
-    suspend fun getDailySummary(startOfDay: Long, endOfDay: Long): DailySummaryData {
-        val tremorByHour = getTremorByHour(startOfDay, endOfDay).associate { it }
-        val meds = getMedicationLogForDate(startOfDay, endOfDay)
-        val medsByHour = mutableListOf<Int>()
-        
-        return DailySummaryData(
-            avgTremor = 0f,
-            avgHeartRate = 0,
-            sleepEfficiency = 0,
-            lastMedicationTime = null,
-            tremorByHour = tremorByHour,
-            hrByHour = null,
-            medsByHour = medsByHour
-        )
-    }
-
     @Query("""
-        SELECT tpi_score, (timestamp / 3600000) as hour
+        SELECT tpiScore as tpiScore, (timestamp / 3600000) as hour
         FROM tremor_readings 
         WHERE timestamp >= :startOfDay AND timestamp < :endOfDay
         GROUP BY hour
     """)
-    suspend fun getTremorByHour(startOfDay: Long, endOfDay: Long): List<Pair<Int, Float>>
+    suspend fun getTremorByHour(startOfDay: Long, endOfDay: Long): List<TremorByHourData>
 }
-
-data class DailySummaryData(
-    val avgTremor: Float,
-    val avgHeartRate: Int,
-    val sleepEfficiency: Int,
-    val lastMedicationTime: String?,
-    val tremorByHour: Map<Int, Float>?,
-    val hrByHour: Map<Int, Int>?,
-    val medsByHour: List<Int>?
-)

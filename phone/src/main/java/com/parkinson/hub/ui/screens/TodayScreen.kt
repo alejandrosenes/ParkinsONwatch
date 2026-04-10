@@ -269,7 +269,7 @@ fun IndexCard(
                 contentAlignment = Alignment.Center
             ) {
                 androidx.compose.material3.CircularProgressIndicator(
-                    progress = { idsScore / 100f },
+                    progress = idsScore / 100f,
                     modifier = Modifier.size(140.dp),
                     color = scoreColor,
                     trackColor = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.2f),

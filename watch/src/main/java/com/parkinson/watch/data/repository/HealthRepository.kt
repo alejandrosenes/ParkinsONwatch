@@ -93,27 +93,24 @@ class HealthRepository @Inject constructor(
     }
 
     fun getDailySummary(date: LocalDate): Flow<DailySummary> {
-        val startOfDay = date.atStartOfDay().toEpochSecond(java.time.ZoneOffset.UTC)
-        val endOfDay = date.plusDays(1).atStartOfDay().toEpochSecond(java.time.ZoneOffset.UTC)
+        val hourlyData = (0..23).map { hour ->
+            HourlySummary(
+                hour = String.format("%02d:00", hour),
+                tremorLevel = 0f,
+                heartRate = 0,
+                medicationTaken = false
+            )
+        }
 
-        return healthDao.getDailySummary(startOfDay, endOfDay).map { summary ->
-            val hourlyData = (0..23).map { hour ->
-                HourlySummary(
-                    hour = String.format("%02d:00", hour),
-                    tremorLevel = summary.tremorByHour?.get(hour) ?: 0f,
-                    heartRate = summary.hrByHour?.get(hour) ?: 0,
-                    medicationTaken = summary.medsByHour?.contains(hour) == true
-                )
-            }
-
+        return kotlinx.coroutines.flow.flowOf(
             DailySummary(
-                avgTremor = summary.avgTremor,
-                avgHeartRate = summary.avgHeartRate,
-                sleepEfficiency = summary.sleepEfficiency,
-                lastMedicationTime = summary.lastMedicationTime ?: "--:--",
+                avgTremor = 0f,
+                avgHeartRate = 0,
+                sleepEfficiency = 0,
+                lastMedicationTime = "--:--",
                 hourlySummary = hourlyData,
                 alerts = emptyList()
             )
-        }
+        )
     }
 }

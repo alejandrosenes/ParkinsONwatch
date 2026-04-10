@@ -123,9 +123,9 @@ fun DashboardScreen(
 
             items(uiState.alerts) { alert ->
                 AlertItem(
-                    type = alert.type,
+                    type = alert.type.name.lowercase(),
                     message = alert.message,
-                    timestamp = alert.timestamp
+                    timestamp = alert.timestamp.toString()
                 )
             }
         }
