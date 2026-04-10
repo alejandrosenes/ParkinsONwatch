@@ -19,8 +19,8 @@ import java.time.format.DateTimeFormatter
 import javax.inject.Inject
 
 data class StatusUiState(
-    val currentTime: String = "",
-    val currentDate: String = "",
+    val currentTime: String = java.time.LocalDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm")),
+    val currentDate: String = java.time.LocalDateTime.now().format(DateTimeFormatter.ofPattern("EEEE, d MMM")),
     val tpiScore: Float = 0f,
     val tremorSeverity: Float = 0f,
     val heartRate: Int = 0,

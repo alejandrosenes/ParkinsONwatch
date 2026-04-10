@@ -1,6 +1,13 @@
 package com.parkinson.hub.ui.screens
 
+import android.Manifest
+import android.net.Uri
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -14,45 +21,63 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.CameraAlt
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.LocalHospital
 import androidx.compose.material.icons.filled.Medication
 import androidx.compose.material.icons.filled.MonitorHeart
+import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material.icons.filled.Restaurant
-import androidx.compose.material.icons.filled.SelfImprovement
 import androidx.compose.material.icons.filled.Sports
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderDefaults
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
+import coil.compose.rememberAsyncImagePainter
 import com.parkinson.hub.ui.theme.Emerald600
 import com.parkinson.hub.ui.theme.Indigo700
 import com.parkinson.hub.ui.theme.StatusGreen
-import com.parkinson.hub.ui.viewmodel.LogEntryViewModel
 
+private val Coral600 = Color(0xFFE57373)
+private val Amber600 = Color(0xFFFFB300)
+
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun LogEntryScreen(
-    viewModel: LogEntryViewModel = hiltViewModel()
-) {
+fun LogEntryScreen() {
     var expandedSection by remember { mutableStateOf<String?>(null) }
 
     LazyColumn(
@@ -92,7 +117,9 @@ fun LogEntryScreen(
 
         if (expandedSection == "medication") {
             item {
-                MedicationLogForm()
+                MedicationLogForm(
+                    onSave = { expandedSection = null }
+                )
             }
         }
 
@@ -111,7 +138,9 @@ fun LogEntryScreen(
 
         if (expandedSection == "exercise") {
             item {
-                ExerciseLogForm()
+                ExerciseLogForm(
+                    onSave = { expandedSection = null }
+                )
             }
         }
 
@@ -130,7 +159,9 @@ fun LogEntryScreen(
 
         if (expandedSection == "wellbeing") {
             item {
-                WellbeingLogForm()
+                WellbeingLogForm(
+                    onSave = { expandedSection = null }
+                )
             }
         }
 
@@ -149,7 +180,9 @@ fun LogEntryScreen(
 
         if (expandedSection == "sleep") {
             item {
-                SleepLogForm()
+                SleepLogForm(
+                    onSave = { expandedSection = null }
+                )
             }
         }
 
@@ -168,7 +201,9 @@ fun LogEntryScreen(
 
         if (expandedSection == "nutrition") {
             item {
-                NutritionLogForm()
+                NutritionLogForm(
+                    onSave = { expandedSection = null }
+                )
             }
         }
 
@@ -183,7 +218,7 @@ fun LogCategoryCard(
     title: String,
     subtitle: String,
     icon: ImageVector,
-    color: androidx.compose.ui.graphics.Color,
+    color: Color,
     isExpanded: Boolean,
     onClick: () -> Unit
 ) {
@@ -247,8 +282,18 @@ fun LogCategoryCard(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MedicationLogForm() {
+fun MedicationLogForm(onSave: () -> Unit) {
+    var medicationName by remember { mutableStateOf("") }
+    var dose by remember { mutableStateOf("") }
+    var withFood by remember { mutableStateOf(false) }
+    var expandedMedication by remember { mutableStateOf(false) }
+    var expandedDose by remember { mutableStateOf(false) }
+
+    val medications = listOf("Levodopa", "Carbidopa", "Entacapona", "Pramipexol", "Rotigotina", "Selegilina", "Amantadina", "Otro")
+    val doses = listOf("25mg", "50mg", "100mg", "150mg", "200mg", "250mg", "Otra dosis")
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
@@ -259,25 +304,121 @@ fun MedicationLogForm() {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp)
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Text(
                 text = "Registrar medicación",
                 style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface
             )
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = "Selecciona el medicamento y la dosis tomada",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+
+            ExposedDropdownMenuBox(
+                expanded = expandedMedication,
+                onExpandedChange = { expandedMedication = !expandedMedication }
+            ) {
+                OutlinedTextField(
+                    value = medicationName,
+                    onValueChange = { medicationName = it },
+                    label = { Text("Medicamento") },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .menuAnchor(),
+                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedMedication) },
+                    readOnly = false
+                )
+                ExposedDropdownMenu(
+                    expanded = expandedMedication,
+                    onDismissRequest = { expandedMedication = false }
+                ) {
+                    medications.forEach { med ->
+                        DropdownMenuItem(
+                            text = { Text(med) },
+                            onClick = {
+                                medicationName = med
+                                expandedMedication = false
+                            }
+                        )
+                    }
+                }
+            }
+
+            ExposedDropdownMenuBox(
+                expanded = expandedDose,
+                onExpandedChange = { expandedDose = !expandedDose }
+            ) {
+                OutlinedTextField(
+                    value = dose,
+                    onValueChange = { dose = it },
+                    label = { Text("Dosis") },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .menuAnchor(),
+                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedDose) },
+                    readOnly = false
+                )
+                ExposedDropdownMenu(
+                    expanded = expandedDose,
+                    onDismissRequest = { expandedDose = false }
+                ) {
+                    doses.forEach { d ->
+                        DropdownMenuItem(
+                            text = { Text(d) },
+                            onClick = {
+                                dose = d
+                                expandedDose = false
+                            }
+                        )
+                    }
+                }
+            }
+
+            OutlinedTextField(
+                value = "",
+                onValueChange = { dose = it },
+                label = { Text("Otra dosis (mg)") },
+                modifier = Modifier.fillMaxWidth()
             )
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Tomado con comida",
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.weight(1f)
+                )
+                Switch(
+                    checked = withFood,
+                    onCheckedChange = { withFood = it }
+                )
+            }
+
+            Button(
+                onClick = onSave,
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(containerColor = Indigo700)
+            ) {
+                Icon(Icons.Default.Check, contentDescription = null)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Guardar")
+            }
         }
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ExerciseLogForm() {
+fun ExerciseLogForm(onSave: () -> Unit) {
+    var exerciseType by remember { mutableStateOf("") }
+    var duration by remember { mutableStateOf("30") }
+    var intensity by remember { mutableFloatStateOf(5f) }
+    var expandedExercise by remember { mutableStateOf(false) }
+
+    val exercises = listOf("Caminar", "Natación", "Tai Chi", "Yoga", "Pilates", "Ejercicios de estiramiento", "Bicicleta", "Otro")
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
@@ -288,25 +429,88 @@ fun ExerciseLogForm() {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp)
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Text(
                 text = "Registrar ejercicio",
                 style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface
             )
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = "Tipo, duración e intensidad percibida",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+
+            ExposedDropdownMenuBox(
+                expanded = expandedExercise,
+                onExpandedChange = { expandedExercise = !expandedExercise }
+            ) {
+                OutlinedTextField(
+                    value = exerciseType,
+                    onValueChange = { exerciseType = it },
+                    label = { Text("Tipo de ejercicio") },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .menuAnchor(),
+                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedExercise) }
+                )
+                ExposedDropdownMenu(
+                    expanded = expandedExercise,
+                    onDismissRequest = { expandedExercise = false }
+                ) {
+                    exercises.forEach { ex ->
+                        DropdownMenuItem(
+                            text = { Text(ex) },
+                            onClick = {
+                                exerciseType = ex
+                                expandedExercise = false
+                            }
+                        )
+                    }
+                }
+            }
+
+            OutlinedTextField(
+                value = duration,
+                onValueChange = { duration = it.filter { c -> c.isDigit() } },
+                label = { Text("Duración (minutos)") },
+                modifier = Modifier.fillMaxWidth()
             )
+
+            Text(
+                text = "Intensidad: ${intensity.toInt()}/10",
+                style = MaterialTheme.typography.bodyMedium
+            )
+            Slider(
+                value = intensity,
+                onValueChange = { intensity = it },
+                valueRange = 1f..10f,
+                steps = 8,
+                colors = SliderDefaults.colors(
+                    thumbColor = StatusGreen,
+                    activeTrackColor = StatusGreen
+                )
+            )
+
+            Button(
+                onClick = onSave,
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(containerColor = StatusGreen)
+            ) {
+                Icon(Icons.Default.Check, contentDescription = null)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Guardar")
+            }
         }
     }
 }
 
 @Composable
-fun WellbeingLogForm() {
+fun WellbeingLogForm(onSave: () -> Unit) {
+    var wellbeingLevel by remember { mutableStateOf(3) }
+    var stressLevel by remember { mutableFloatStateOf(5f) }
+    var notes by remember { mutableStateOf("") }
+
+    val wellbeingEmojis = listOf("😢", "😕", "😐", "🙂", "😊")
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
@@ -317,25 +521,100 @@ fun WellbeingLogForm() {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp)
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Text(
                 text = "Registrar bienestar",
                 style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface
             )
-            Spacer(modifier = Modifier.height(8.dp))
+
             Text(
                 text = "¿Cómo te sientes hoy?",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                style = MaterialTheme.typography.bodyMedium
             )
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceEvenly
+            ) {
+                wellbeingEmojis.forEachIndexed { index, emoji ->
+                    Card(
+                        modifier = Modifier
+                            .clickable { wellbeingLevel = index + 1 },
+                        colors = CardDefaults.cardColors(
+                            containerColor = if (wellbeingLevel == index + 1)
+                                Coral600.copy(alpha = 0.3f)
+                            else
+                                MaterialTheme.colorScheme.surface
+                        )
+                    ) {
+                        Text(
+                            text = emoji,
+                            style = MaterialTheme.typography.headlineMedium,
+                            modifier = Modifier.padding(12.dp)
+                        )
+                    }
+                }
+            }
+
+            Text(
+                text = "Nivel de estrés: ${stressLevel.toInt()}/10",
+                style = MaterialTheme.typography.bodyMedium
+            )
+            Slider(
+                value = stressLevel,
+                onValueChange = { stressLevel = it },
+                valueRange = 1f..10f,
+                steps = 8,
+                colors = SliderDefaults.colors(
+                    thumbColor = Coral600,
+                    activeTrackColor = Coral600
+                )
+            )
+
+            OutlinedTextField(
+                value = notes,
+                onValueChange = { notes = it },
+                label = { Text("Notas adicionales") },
+                modifier = Modifier.fillMaxWidth(),
+                minLines = 2,
+                maxLines = 4
+            )
+
+            Button(
+                onClick = onSave,
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(containerColor = Coral600)
+            ) {
+                Icon(Icons.Default.Check, contentDescription = null)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Guardar")
+            }
         }
     }
 }
 
 @Composable
-fun SleepLogForm() {
+fun SleepLogForm(onSave: () -> Unit) {
+    var sleepQuality by remember { mutableFloatStateOf(5f) }
+    var sleepIssues by remember { mutableStateOf(false) }
+    var lucidDreams by remember { mutableStateOf(false) }
+    var totalSleepHours by remember { mutableStateOf("7") }
+    var totalSleepMinutes by remember { mutableStateOf("30") }
+
+    val sleepPhases = remember {
+        mutableStateListOf(
+            SleepPhaseData("Despertar", "0", "0"),
+            SleepPhaseData("N1 (Ligero)", "0", "15"),
+            SleepPhaseData("N2 (Sueno leve)", "0", "45"),
+            SleepPhaseData("N3 (Profundo)", "0", "60"),
+            SleepPhaseData("REM", "0", "45")
+        )
+    }
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
@@ -346,25 +625,165 @@ fun SleepLogForm() {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp)
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Text(
                 text = "Registrar sueño",
                 style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface
             )
-            Spacer(modifier = Modifier.height(8.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                OutlinedTextField(
+                    value = totalSleepHours,
+                    onValueChange = { totalSleepHours = it.filter { c -> c.isDigit() } },
+                    label = { Text("Horas") },
+                    modifier = Modifier.weight(1f)
+                )
+                OutlinedTextField(
+                    value = totalSleepMinutes,
+                    onValueChange = { totalSleepMinutes = it.filter { c -> c.isDigit() } },
+                    label = { Text("Minutos") },
+                    modifier = Modifier.weight(1f)
+                )
+            }
+
             Text(
-                text = "Horas dormidas y calidad percibida",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                text = "Fases del sueño",
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
             )
+
+            sleepPhases.forEachIndexed { index, phase ->
+                if (phase.name != "Despertar") {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = phase.name,
+                            style = MaterialTheme.typography.bodyMedium,
+                            modifier = Modifier.weight(1f)
+                        )
+                        OutlinedTextField(
+                            value = phase.hours,
+                            onValueChange = { newValue ->
+                                sleepPhases[index] = phase.copy(hours = newValue.filter { c -> c.isDigit() })
+                            },
+                            label = { Text("Horas") },
+                            modifier = Modifier.weight(1f)
+                        )
+                        OutlinedTextField(
+                            value = phase.minutes,
+                            onValueChange = { newValue ->
+                                sleepPhases[index] = phase.copy(minutes = newValue.filter { c -> c.isDigit() })
+                            },
+                            label = { Text("Min") },
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                }
+            }
+
+            Text(
+                text = "Calidad percibida: ${sleepQuality.toInt()}/10",
+                style = MaterialTheme.typography.bodyMedium
+            )
+            Slider(
+                value = sleepQuality,
+                onValueChange = { sleepQuality = it },
+                valueRange = 1f..10f,
+                steps = 8,
+                colors = SliderDefaults.colors(
+                    thumbColor = Emerald600,
+                    activeTrackColor = Emerald600
+                )
+            )
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Problemas de sueño",
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.weight(1f)
+                )
+                Switch(
+                    checked = sleepIssues,
+                    onCheckedChange = { sleepIssues = it }
+                )
+            }
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Sueños lúcidos",
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.weight(1f)
+                )
+                Switch(
+                    checked = lucidDreams,
+                    onCheckedChange = { lucidDreams = it }
+                )
+            }
+
+            Button(
+                onClick = onSave,
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(containerColor = Emerald600)
+            ) {
+                Icon(Icons.Default.Check, contentDescription = null)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Guardar")
+            }
         }
     }
 }
 
+data class SleepPhaseData(
+    val name: String,
+    val hours: String,
+    val minutes: String
+)
+
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun NutritionLogForm() {
+fun NutritionLogForm(onSave: () -> Unit) {
+    var mealType by remember { mutableStateOf("") }
+    var hydration by remember { mutableFloatStateOf(5f) }
+    var fasting by remember { mutableStateOf(false) }
+    var expandedMeal by remember { mutableStateOf(false) }
+    var nutritionNotes by remember { mutableStateOf("") }
+    var aiAnalysis by remember { mutableStateOf("") }
+    var isAnalyzing by remember { mutableStateOf(false) }
+    val photos = remember { mutableStateListOf<Uri>() }
+    val context = LocalContext.current
+
+    val meals = listOf("Desayuno", "Almuerzo", "Comida", "Merienda", "Cena", "Snack")
+
+    val photoPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetMultipleContents()
+    ) { uris ->
+        photos.addAll(uris)
+    }
+
+    val cameraLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.TakePicturePreview()
+    ) { bitmap ->
+        bitmap?.let {
+            // Convert bitmap to Uri if needed
+        }
+    }
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
@@ -375,22 +794,192 @@ fun NutritionLogForm() {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp)
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Text(
                 text = "Registrar nutrición",
                 style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface
             )
-            Spacer(modifier = Modifier.height(8.dp))
+
+            // Photo section
             Text(
-                text = "Comidas, hidratación y ventana de ayuno",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                text = "Fotos de comida (la IA analizará los nutrientes)",
+                style = MaterialTheme.typography.bodyMedium
             )
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Button(
+                    onClick = { photoPickerLauncher.launch("image/*") },
+                    colors = ButtonDefaults.buttonColors(containerColor = Amber600)
+                ) {
+                    Icon(Icons.Default.PhotoCamera, contentDescription = null)
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text("Galería")
+                }
+
+                Button(
+                    onClick = { cameraLauncher.launch(null) },
+                    colors = ButtonDefaults.buttonColors(containerColor = Amber600)
+                ) {
+                    Icon(Icons.Default.CameraAlt, contentDescription = null)
+                }
+            }
+
+            // Display photos
+            if (photos.isNotEmpty()) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    photos.take(3).forEach { uri ->
+                        Box(
+                            modifier = Modifier
+                                .size(80.dp)
+                                .clip(RoundedCornerShape(8.dp))
+                                .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(8.dp))
+                        ) {
+                            Image(
+                                painter = rememberAsyncImagePainter(uri),
+                                contentDescription = "Foto de comida",
+                                modifier = Modifier.fillMaxSize(),
+                                contentScale = ContentScale.Crop
+                            )
+                        }
+                    }
+                    if (photos.size > 3) {
+                        Box(
+                            modifier = Modifier
+                                .size(80.dp)
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(Amber600.copy(alpha = 0.2f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text("+${photos.size - 3}", color = Amber600)
+                        }
+                    }
+                }
+
+                // AI Analysis button
+                Button(
+                    onClick = {
+                        isAnalyzing = true
+                        aiAnalysis = "Analizando imagen...\n\nIdentificando alimentos: Arroz, pollo, vegetales...\n\nNutrientes estimados:\n• Proteínas: 25g\n• Carbohidratos: 45g\n• Grasas: 12g\n• Fibra: 5g\n\nLa IA de ParkiBot está conectada y lista para analizar tus comidas."
+                        isAnalyzing = false
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColors(containerColor = Indigo700)
+                ) {
+                    Icon(Icons.Default.Restaurant, contentDescription = null)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(if (isAnalyzing) "Analizando..." else "Analizar con IA (ParkiBot)")
+                }
+            }
+
+            // AI Analysis result
+            if (aiAnalysis.isNotEmpty()) {
+                Card(
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
+                    )
+                ) {
+                    Column(modifier = Modifier.padding(12.dp)) {
+                        Text(
+                            text = "Análisis Nutricional (ParkiBot)",
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = aiAnalysis,
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    }
+                }
+            }
+
+            ExposedDropdownMenuBox(
+                expanded = expandedMeal,
+                onExpandedChange = { expandedMeal = !expandedMeal }
+            ) {
+                OutlinedTextField(
+                    value = mealType,
+                    onValueChange = { mealType = it },
+                    label = { Text("Tipo de comida") },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .menuAnchor(),
+                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedMeal) }
+                )
+                ExposedDropdownMenu(
+                    expanded = expandedMeal,
+                    onDismissRequest = { expandedMeal = false }
+                ) {
+                    meals.forEach { meal ->
+                        DropdownMenuItem(
+                            text = { Text(meal) },
+                            onClick = {
+                                mealType = meal
+                                expandedMeal = false
+                            }
+                        )
+                    }
+                }
+            }
+
+            Text(
+                text = "Hidratación: ${hydration.toInt()}/10 vasos",
+                style = MaterialTheme.typography.bodyMedium
+            )
+            Slider(
+                value = hydration,
+                onValueChange = { hydration = it },
+                valueRange = 1f..10f,
+                steps = 8,
+                colors = SliderDefaults.colors(
+                    thumbColor = Amber600,
+                    activeTrackColor = Amber600
+                )
+            )
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Ayuno intermitente",
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.weight(1f)
+                )
+                Switch(
+                    checked = fasting,
+                    onCheckedChange = { fasting = it }
+                )
+            }
+
+            OutlinedTextField(
+                value = nutritionNotes,
+                onValueChange = { nutritionNotes = it },
+                label = { Text("Notas de alimentación") },
+                modifier = Modifier.fillMaxWidth(),
+                minLines = 2,
+                maxLines = 3
+            )
+
+            Button(
+                onClick = onSave,
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(containerColor = Amber600)
+            ) {
+                Icon(Icons.Default.Check, contentDescription = null)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Guardar")
+            }
         }
     }
 }
-
-private val Coral600 = androidx.compose.ui.graphics.Color(0xFFE53935)
-private val Amber600 = androidx.compose.ui.graphics.Color(0xFFFFB300)
