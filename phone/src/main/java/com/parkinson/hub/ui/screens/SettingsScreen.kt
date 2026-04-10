@@ -27,6 +27,7 @@ import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Fingerprint
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Security
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.SmartToy
 import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material3.AlertDialog
@@ -266,7 +267,10 @@ fun SettingsScreen(
             totalRecords = uiState.totalRecords,
             lastExport = uiState.lastExport,
             onDismiss = { showPrivacyDialog = false },
-            onExport = { viewModel.exportData() }
+            onExport = { viewModel.exportData() },
+            onShare = { viewModel.shareExport() },
+            isExporting = uiState.isExporting,
+            exportPath = uiState.exportUri
         )
     }
 
@@ -566,7 +570,10 @@ fun PrivacyDataDialog(
     totalRecords: Int,
     lastExport: String,
     onDismiss: () -> Unit,
-    onExport: () -> Unit
+    onExport: () -> Unit,
+    onShare: () -> Unit,
+    isExporting: Boolean = false,
+    exportPath: String? = null
 ) {
     var showDeleteConfirm by remember { mutableStateOf(false) }
 
@@ -594,6 +601,36 @@ fun PrivacyDataDialog(
                     }
                 }
 
+                if (exportPath != null) {
+                    Card(
+                        colors = CardDefaults.cardColors(
+                            containerColor = StatusGreen.copy(alpha = 0.1f)
+                        )
+                    ) {
+                        Column(modifier = Modifier.padding(12.dp)) {
+                            Text(
+                                text = "✓ Exportación completada",
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = StatusGreen
+                            )
+                            Text(
+                                text = "Archivo guardado en Documents/exports/",
+                                style = MaterialTheme.typography.bodySmall
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Button(
+                                onClick = onShare,
+                                colors = ButtonDefaults.buttonColors(containerColor = Indigo700)
+                            ) {
+                                Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(16.dp))
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text("Compartir archivo")
+                            }
+                        }
+                    }
+                }
+
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -601,11 +638,20 @@ fun PrivacyDataDialog(
                     Button(
                         onClick = onExport,
                         modifier = Modifier.weight(1f),
+                        enabled = !isExporting,
                         colors = ButtonDefaults.buttonColors(containerColor = Indigo700)
                     ) {
-                        Icon(Icons.Default.Download, contentDescription = null, modifier = Modifier.size(18.dp))
+                        if (isExporting) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(16.dp),
+                                color = MaterialTheme.colorScheme.onPrimary,
+                                strokeWidth = 2.dp
+                            )
+                        } else {
+                            Icon(Icons.Default.Download, contentDescription = null, modifier = Modifier.size(16.dp))
+                        }
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("Exportar")
+                        Text(if (isExporting) "Exportando..." else "Exportar")
                     }
 
                     Button(
@@ -615,7 +661,7 @@ fun PrivacyDataDialog(
                             containerColor = MaterialTheme.colorScheme.error
                         )
                     ) {
-                        Icon(Icons.Default.Delete, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Icon(Icons.Default.Delete, contentDescription = null, modifier = Modifier.size(16.dp))
                         Spacer(modifier = Modifier.width(4.dp))
                         Text("Borrar")
                     }

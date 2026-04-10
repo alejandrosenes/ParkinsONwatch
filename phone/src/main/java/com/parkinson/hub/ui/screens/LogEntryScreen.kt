@@ -1,8 +1,6 @@
 package com.parkinson.hub.ui.screens
 
-import android.Manifest
 import android.net.Uri
-import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
@@ -25,16 +23,17 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccessTime
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Medication
 import androidx.compose.material.icons.filled.MonitorHeart
 import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material.icons.filled.Restaurant
 import androidx.compose.material.icons.filled.Sports
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -50,6 +49,9 @@ import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TimePicker
+import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -64,13 +66,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import coil.compose.rememberAsyncImagePainter
 import com.parkinson.hub.ui.theme.Emerald600
 import com.parkinson.hub.ui.theme.Indigo700
 import com.parkinson.hub.ui.theme.StatusGreen
+import java.time.LocalTime
 
 private val Coral600 = Color(0xFFE57373)
 private val Amber600 = Color(0xFFFFB300)
@@ -290,9 +292,22 @@ fun MedicationLogForm(onSave: () -> Unit) {
     var withFood by remember { mutableStateOf(false) }
     var expandedMedication by remember { mutableStateOf(false) }
     var expandedDose by remember { mutableStateOf(false) }
+    var showTimePicker by remember { mutableStateOf(false) }
+    var selectedTime by remember { mutableStateOf(LocalTime.now()) }
 
     val medications = listOf("Levodopa", "Carbidopa", "Entacapona", "Pramipexol", "Rotigotina", "Selegilina", "Amantadina", "Otro")
     val doses = listOf("25mg", "50mg", "100mg", "150mg", "200mg", "250mg", "Otra dosis")
+
+    if (showTimePicker) {
+        TimePickerDialog(
+            initialTime = selectedTime,
+            onDismiss = { showTimePicker = false },
+            onConfirm = { time ->
+                selectedTime = time
+                showTimePicker = false
+            }
+        )
+    }
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -313,6 +328,33 @@ fun MedicationLogForm(onSave: () -> Unit) {
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface
             )
+
+            // Time selector
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { showTimePicker = true },
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = Icons.Default.AccessTime,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary
+                )
+                Spacer(modifier = Modifier.width(12.dp))
+                Column {
+                    Text(
+                        text = "Hora del registro",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                    )
+                    Text(
+                        text = String.format("%02d:%02d", selectedTime.hour, selectedTime.minute),
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
 
             ExposedDropdownMenuBox(
                 expanded = expandedMedication,
@@ -416,8 +458,21 @@ fun ExerciseLogForm(onSave: () -> Unit) {
     var duration by remember { mutableStateOf("30") }
     var intensity by remember { mutableFloatStateOf(5f) }
     var expandedExercise by remember { mutableStateOf(false) }
+    var showTimePicker by remember { mutableStateOf(false) }
+    var selectedTime by remember { mutableStateOf(LocalTime.now()) }
 
     val exercises = listOf("Caminar", "Natación", "Tai Chi", "Yoga", "Pilates", "Ejercicios de estiramiento", "Bicicleta", "Otro")
+
+    if (showTimePicker) {
+        TimePickerDialog(
+            initialTime = selectedTime,
+            onDismiss = { showTimePicker = false },
+            onConfirm = { time ->
+                selectedTime = time
+                showTimePicker = false
+            }
+        )
+    }
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -438,6 +493,32 @@ fun ExerciseLogForm(onSave: () -> Unit) {
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface
             )
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { showTimePicker = true },
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = Icons.Default.AccessTime,
+                    contentDescription = null,
+                    tint = StatusGreen
+                )
+                Spacer(modifier = Modifier.width(12.dp))
+                Column {
+                    Text(
+                        text = "Hora del registro",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                    )
+                    Text(
+                        text = String.format("%02d:%02d", selectedTime.hour, selectedTime.minute),
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
 
             ExposedDropdownMenuBox(
                 expanded = expandedExercise,
@@ -508,8 +589,21 @@ fun WellbeingLogForm(onSave: () -> Unit) {
     var wellbeingLevel by remember { mutableStateOf(3) }
     var stressLevel by remember { mutableFloatStateOf(5f) }
     var notes by remember { mutableStateOf("") }
+    var showTimePicker by remember { mutableStateOf(false) }
+    var selectedTime by remember { mutableStateOf(LocalTime.now()) }
 
     val wellbeingEmojis = listOf("😢", "😕", "😐", "🙂", "😊")
+
+    if (showTimePicker) {
+        TimePickerDialog(
+            initialTime = selectedTime,
+            onDismiss = { showTimePicker = false },
+            onConfirm = { time ->
+                selectedTime = time
+                showTimePicker = false
+            }
+        )
+    }
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -604,6 +698,10 @@ fun SleepLogForm(onSave: () -> Unit) {
     var lucidDreams by remember { mutableStateOf(false) }
     var totalSleepHours by remember { mutableStateOf("7") }
     var totalSleepMinutes by remember { mutableStateOf("30") }
+    var showBedtimePicker by remember { mutableStateOf(false) }
+    var showWakeTimePicker by remember { mutableStateOf(false) }
+    var bedtime by remember { mutableStateOf(LocalTime.of(23, 0)) }
+    var wakeTime by remember { mutableStateOf(LocalTime.of(7, 0)) }
 
     val sleepPhases = remember {
         mutableStateListOf(
@@ -612,6 +710,28 @@ fun SleepLogForm(onSave: () -> Unit) {
             SleepPhaseData("N2 (Sueno leve)", "0", "45"),
             SleepPhaseData("N3 (Profundo)", "0", "60"),
             SleepPhaseData("REM", "0", "45")
+        )
+    }
+
+    if (showBedtimePicker) {
+        TimePickerDialog(
+            initialTime = bedtime,
+            onDismiss = { showBedtimePicker = false },
+            onConfirm = { time ->
+                bedtime = time
+                showBedtimePicker = false
+            }
+        )
+    }
+
+    if (showWakeTimePicker) {
+        TimePickerDialog(
+            initialTime = wakeTime,
+            onDismiss = { showWakeTimePicker = false },
+            onConfirm = { time ->
+                wakeTime = time
+                showWakeTimePicker = false
+            }
         )
     }
 
@@ -765,10 +885,22 @@ fun NutritionLogForm(onSave: () -> Unit) {
     var nutritionNotes by remember { mutableStateOf("") }
     var aiAnalysis by remember { mutableStateOf("") }
     var isAnalyzing by remember { mutableStateOf(false) }
+    var showTimePicker by remember { mutableStateOf(false) }
+    var selectedTime by remember { mutableStateOf(LocalTime.now()) }
     val photos = remember { mutableStateListOf<Uri>() }
-    val context = LocalContext.current
 
     val meals = listOf("Desayuno", "Almuerzo", "Comida", "Merienda", "Cena", "Snack")
+
+    if (showTimePicker) {
+        TimePickerDialog(
+            initialTime = selectedTime,
+            onDismiss = { showTimePicker = false },
+            onConfirm = { time ->
+                selectedTime = time
+                showTimePicker = false
+            }
+        )
+    }
 
     val photoPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetMultipleContents()
@@ -779,9 +911,7 @@ fun NutritionLogForm(onSave: () -> Unit) {
     val cameraLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.TakePicturePreview()
     ) { bitmap ->
-        bitmap?.let {
-            // Convert bitmap to Uri if needed
-        }
+        // Handle camera capture
     }
 
     Card(
@@ -804,7 +934,32 @@ fun NutritionLogForm(onSave: () -> Unit) {
                 color = MaterialTheme.colorScheme.onSurface
             )
 
-            // Photo section
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { showTimePicker = true },
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = Icons.Default.AccessTime,
+                    contentDescription = null,
+                    tint = Amber600
+                )
+                Spacer(modifier = Modifier.width(12.dp))
+                Column {
+                    Text(
+                        text = "Hora del registro",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                    )
+                    Text(
+                        text = String.format("%02d:%02d", selectedTime.hour, selectedTime.minute),
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+
             Text(
                 text = "Fotos de comida (la IA analizará los nutrientes)",
                 style = MaterialTheme.typography.bodyMedium
@@ -982,4 +1137,42 @@ fun NutritionLogForm(onSave: () -> Unit) {
             }
         }
     }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun TimePickerDialog(
+    initialTime: LocalTime,
+    onDismiss: () -> Unit,
+    onConfirm: (LocalTime) -> Unit
+) {
+    val timePickerState = rememberTimePickerState(
+        initialHour = initialTime.hour,
+        initialMinute = initialTime.minute
+    )
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Seleccionar hora") },
+        text = {
+            Box(
+                modifier = Modifier.fillMaxWidth(),
+                contentAlignment = Alignment.Center
+            ) {
+                TimePicker(state = timePickerState)
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = {
+                onConfirm(LocalTime.of(timePickerState.hour, timePickerState.minute))
+            }) {
+                Text("Aceptar")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancelar")
+            }
+        }
+    )
 }
