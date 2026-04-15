@@ -172,10 +172,17 @@ class SensorService : Service(), SensorEventListener {
         }
     }
 
+    private val tempAccelValues = FloatArray(3)
+    private val tempGyroValues = FloatArray(3)
+
     private fun handleAccelerometer(event: SensorEvent) {
         synchronized(accelerometerBuffer) {
-            accelerometerBuffer.add(event.values.clone())
-            while (accelerometerBuffer.size > ACCEL_BUFFER_SIZE) {
+            // Reuse array instead of cloning
+            System.arraycopy(event.values, 0, tempAccelValues, 0, 3)
+            accelerometerBuffer.add(tempAccelValues.copyOf())
+            
+            // Use more efficient removal for circular buffer
+            if (accelerometerBuffer.size > ACCEL_BUFFER_SIZE) {
                 accelerometerBuffer.removeAt(0)
             }
         }
@@ -183,8 +190,11 @@ class SensorService : Service(), SensorEventListener {
 
     private fun handleGyroscope(event: SensorEvent) {
         synchronized(gyroBuffer) {
-            gyroBuffer.add(event.values.clone())
-            while (gyroBuffer.size > GYRO_BUFFER_SIZE) {
+            // Reuse array instead of cloning
+            System.arraycopy(event.values, 0, tempGyroValues, 0, 3)
+            gyroBuffer.add(tempGyroValues.copyOf())
+            
+            if (gyroBuffer.size > GYRO_BUFFER_SIZE) {
                 gyroBuffer.removeAt(0)
             }
         }
@@ -192,7 +202,7 @@ class SensorService : Service(), SensorEventListener {
 
     private fun handleHeartRate(event: SensorEvent) {
         val bpm = event.values[0].toInt()
-        if (bpm > 0) {
+        if (bpm > 0 && bpm < 250) { // Validate heart rate range
             serviceScope.launch {
                 sensorDao.insertHeartRate(
                     HeartRateEntity(
@@ -239,38 +249,38 @@ class SensorService : Service(), SensorEventListener {
     private suspend fun processBuffers() {
         val accelData: List<FloatArray>
         synchronized(accelerometerBuffer) {
-            accelData = accelerometerBuffer.toList()
+            if (accelerometerBuffer.size < 128) return
+            accelData = accelerometerBuffer.takeLast(128)
         }
 
-        if (accelData.size >= 128) {
-            val analysis = tremorAnalyzer.analyze(accelData)
+        val analysis = tremorAnalyzer.analyze(accelData)
 
-            sensorDao.insertTremor(
-                TremorEntity(
+        sensorDao.insertTremor(
+            TremorEntity(
+                timestamp = System.currentTimeMillis(),
+                tpiScore = analysis.tpiScore,
+                dominantFrequency = analysis.dominantFrequency,
+                bandPower3_7 = analysis.bandPower3_7,
+                bandPower8_12 = analysis.bandPower8_12,
+                rmsAmplitude = analysis.rmsAmplitude
+            )
+        )
+
+        if (stepCount > 0) {
+            sensorDao.insertGait(
+                GaitMetricEntity(
                     timestamp = System.currentTimeMillis(),
-                    tpiScore = analysis.tpiScore,
-                    dominantFrequency = analysis.dominantFrequency,
-                    bandPower3_7 = analysis.bandPower3_7,
-                    bandPower8_12 = analysis.bandPower8_12,
-                    rmsAmplitude = analysis.rmsAmplitude
+                    cadence = calculateCadence(),
+                    stepCount = stepCount,
+                    fogEpisodes = fogEpisodes,
+                    asymmetryPercent = 0f
                 )
             )
-
-            if (stepCount > 0) {
-                sensorDao.insertGait(
-                    GaitMetricEntity(
-                        timestamp = System.currentTimeMillis(),
-                        cadence = calculateCadence(),
-                        stepCount = stepCount,
-                        fogEpisodes = fogEpisodes,
-                        asymmetryPercent = 0f
-                    )
-                )
-            }
         }
     }
 
     private fun calculateCadence(): Int {
+        if (lastStepTime == 0L || stepCount == 0) return 0
         val elapsedMinutes = (System.currentTimeMillis() - lastStepTime) / 60000f
         return if (elapsedMinutes > 0) {
             (stepCount / elapsedMinutes).toInt()

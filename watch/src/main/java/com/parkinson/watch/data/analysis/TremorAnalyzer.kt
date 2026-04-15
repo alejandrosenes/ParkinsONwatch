@@ -26,27 +26,42 @@ class TremorAnalyzer @Inject constructor() {
     private val fftSize = 128
     private val pdFrequencyRange = 3f..7f
     private val posturalFrequencyRange = 8f..12f
+    
+    // Reusable buffers to avoid allocations
+    private val magnitudeBuffer = FloatArray(fftSize)
+    private val realBuffer = FloatArray(fftSize)
+    private val imagBuffer = FloatArray(fftSize)
+    private val frequencyBuffer = FloatArray(fftSize / 2)
+    private val xBuffer = FloatArray(fftSize)
+    private val yBuffer = FloatArray(fftSize)
+    private val zBuffer = FloatArray(fftSize)
 
     fun analyze(accelData: List<FloatArray>): TremorAnalysis {
         if (accelData.size < fftSize) {
             return TremorAnalysis(0f, 0f, 0f, 0f, 0f, 0)
         }
 
-        val x = accelData.takeLast(fftSize).map { it[0] }.toFloatArray()
-        val y = accelData.takeLast(fftSize).map { it[1] }.toFloatArray()
-        val z = accelData.takeLast(fftSize).map { it[2] }.toFloatArray()
-
-        val magnitude = FloatArray(fftSize) { i ->
-            sqrt(x[i].pow(2) + y[i].pow(2) + z[i].pow(2)) - 9.81f
+        // Pre-fill coordinate buffers
+        val size = accelData.lastIndex
+        for (i in 0 until fftSize) {
+            val data = accelData[size - fftSize + i + 1]
+            xBuffer[i] = data[0]
+            yBuffer[i] = data[1]
+            zBuffer[i] = data[2]
         }
 
-        val rmsAmplitude = calculateRMS(magnitude)
-        val fftResult = computeFFT(magnitude)
-        val frequencies = computeFrequencies()
+        // Calculate magnitude with gravity compensation
+        for (i in 0 until fftSize) {
+            magnitudeBuffer[i] = sqrt(xBuffer[i] * xBuffer[i] + yBuffer[i] * yBuffer[i] + zBuffer[i] * zBuffer[i]) - 9.81f
+        }
 
-        val bandPower3_7 = calculateBandPower(fftResult, frequencies, pdFrequencyRange)
-        val bandPower8_12 = calculateBandPower(fftResult, frequencies, posturalFrequencyRange)
-        val dominantFrequency = findDominantFrequency(fftResult, frequencies)
+        val rmsAmplitude = calculateRMS(magnitudeBuffer)
+        computeFFT(magnitudeBuffer, realBuffer, imagBuffer)
+        computeFrequencies(frequencyBuffer)
+
+        val bandPower3_7 = calculateBandPower(realBuffer, imagBuffer, frequencyBuffer, pdFrequencyRange)
+        val bandPower8_12 = calculateBandPower(realBuffer, imagBuffer, frequencyBuffer, posturalFrequencyRange)
+        val dominantFrequency = findDominantFrequency(realBuffer, imagBuffer, frequencyBuffer)
 
         val tpiScore = calculateTPIScore(rmsAmplitude, bandPower3_7, bandPower8_12)
         val severity = calculateSeverity(tpiScore)
@@ -62,28 +77,41 @@ class TremorAnalyzer @Inject constructor() {
     }
 
     private fun calculateRMS(data: FloatArray): Float {
-        val sumSquares = data.fold(0f) { acc, value -> acc + value * value }
-        return sqrt(sumSquares / data.size)
+        var sumSquares = 0f
+        val size = data.size
+        for (i in 0 until size) {
+            val value = data[i]
+            sumSquares += value * value
+        }
+        return sqrt(sumSquares / size)
     }
 
-    private fun computeFFT(data: FloatArray): FloatArray {
+    private fun computeFFT(data: FloatArray, real: FloatArray, imag: FloatArray) {
         val n = data.size
-        val real = data.copyOf()
-        val imag = FloatArray(n)
+        System.arraycopy(data, 0, real, 0, n)
+        
+        // Zero out imaginary buffer
+        for (i in 0 until n) {
+            imag[i] = 0f
+        }
 
         var size = n
         while (size > 1) {
             size /= 2
-            for (i in 0 until n step n / size) {
+            val step = n / size
+            val halfSize = size * 2
+            
+            for (i in 0 until n step step) {
                 for (j in 0 until size) {
                     val idx1 = i + j
                     val idx2 = idx1 + size
-                    val angle = -2.0 * PI * j / (2 * size)
-                    val cos = cos(angle).toFloat()
-                    val sin = sin(angle).toFloat()
+                    val angle = -2.0 * PI * j / halfSize
+                    
+                    val cosVal = cos(angle).toFloat()
+                    val sinVal = sin(angle).toFloat()
 
-                    val tReal = real[idx2] * cos - imag[idx2] * sin
-                    val tImag = real[idx2] * sin + imag[idx2] * cos
+                    val tReal = real[idx2] * cosVal - imag[idx2] * sinVal
+                    val tImag = real[idx2] * sinVal + imag[idx2] * cosVal
 
                     real[idx2] = real[idx1] - tReal
                     imag[idx2] = imag[idx1] - tImag
@@ -92,45 +120,48 @@ class TremorAnalyzer @Inject constructor() {
                 }
             }
         }
-
-        return FloatArray(n / 2) { i ->
-            sqrt(real[i].pow(2) + imag[i].pow(2))
-        }
     }
 
-    private fun computeFrequencies(): FloatArray {
+    private fun computeFrequencies(buffer: FloatArray) {
         val n = fftSize
-        return FloatArray(n / 2) { i ->
-            i * sampleRate / n
+        val invN = sampleRate / n
+        for (i in buffer.indices) {
+            buffer[i] = i * invN
         }
     }
 
     private fun calculateBandPower(
-        fft: FloatArray,
+        real: FloatArray,
+        imag: FloatArray,
         frequencies: FloatArray,
         range: ClosedFloatingPointRange<Float>
     ): Float {
         var power = 0f
-        for (i in frequencies.indices) {
-            if (frequencies[i] in range) {
-                power += fft[i].pow(2)
+        val size = frequencies.size
+        for (i in 0 until size) {
+            val freq = frequencies[i]
+            if (freq >= range.start && freq <= range.endInclusive) {
+                val magnitude = real[i] * real[i] + imag[i] * imag[i]
+                power += magnitude
             }
         }
         return power
     }
 
-    private fun findDominantFrequency(fft: FloatArray, frequencies: FloatArray): Float {
+    private fun findDominantFrequency(real: FloatArray, imag: FloatArray, frequencies: FloatArray): Float {
         var maxIndex = 0
         var maxValue = 0f
 
-        for (i in fft.indices) {
-            if (fft[i] > maxValue) {
-                maxValue = fft[i]
+        val size = real.size
+        for (i in 0 until size) {
+            val magnitude = real[i] * real[i] + imag[i] * imag[i]
+            if (magnitude > maxValue) {
+                maxValue = magnitude
                 maxIndex = i
             }
         }
 
-        return if (frequencies.isNotEmpty() && maxIndex < frequencies.size) {
+        return if (maxIndex < frequencies.size) {
             frequencies[maxIndex]
         } else 0f
     }
@@ -141,7 +172,8 @@ class TremorAnalyzer @Inject constructor() {
         bandPower8_12: Float
     ): Float {
         val noise = 0.1f
-        val ratio = bandPower3_7 / (bandPower3_7 + bandPower8_12 + noise)
+        val denominator = bandPower3_7 + bandPower8_12 + noise
+        val ratio = bandPower3_7 / denominator
         val tpi = rms * ratio * 10f
         return tpi.coerceIn(0f, 10f)
     }
