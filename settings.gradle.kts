@@ -17,5 +17,6 @@ dependencyResolutionManagement {
 
 rootProject.name = "ParkinsONWatch"
 include(":watch")
+include(":watch-amazfit")
 include(":phone")
 include(":shared")
