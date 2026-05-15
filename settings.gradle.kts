@@ -19,3 +19,4 @@ rootProject.name = "ParkinsONWatch"
 include(":watch")
 include(":phone")
 include(":shared")
+include(":watch-stratos")
