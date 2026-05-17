@@ -1,30 +1,50 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    package="com.parkinson.watch.stratos">
 
+    <!-- Permisos esenciales para Amazfit Stratos / PaceOS -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-    <uses-permission android:name="android.permission.BLUETOOTH" />
-    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
-    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
-    <uses-permission android:name="android.permission.BLUETOOTH_SCAN" />
+    
+    <!-- Bluetooth con soporte para ROMs antiguas -->
+    <uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30" />
+    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" android:maxSdkVersion="30" />
+    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" tools:ignore="UnusedAttribute" />
+    <uses-permission android:name="android.permission.BLUETOOTH_SCAN" tools:ignore="UnusedAttribute" />
+    
+    <!-- Ubicación -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    
+    <!-- Servicios en primer plano compatibles con PaceOS -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.VIBRATE" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    
+    <!-- Sensores -->
     <uses-permission android:name="android.permission.BODY_SENSORS" />
+    
+    <!-- Almacenamiento compatible con Android 7-9 (PaceOS) -->
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
         android:maxSdkVersion="28" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
-        android:maxSdkVersion="32" />
+        android:maxSdkVersion="28" />
+    
+    <!-- Permisos especiales para ROMs modificadas -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" tools:ignore="UnusedAttribute" />
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
 
-    <uses-feature android:name="android.hardware.sensor.accelerometer" android:required="true" />
+    <!-- Características de hardware - NO requeridas para evitar rechazo en PaceOS -->
+    <uses-feature android:name="android.hardware.sensor.accelerometer" android:required="false" />
     <uses-feature android:name="android.hardware.sensor.gyroscope" android:required="false" />
     <uses-feature android:name="android.hardware.sensor.heart_rate" android:required="false" />
     <uses-feature android:name="android.hardware.bluetooth_le" android:required="false" />
     <uses-feature android:name="android.hardware.location.gps" android:required="false" />
+    <uses-feature android:name="android.hardware.touchscreen" android:required="false" />
+    <uses-feature android:name="android.hardware.screen.portrait" android:required="false" />
 
     <application
         android:name=".ParkinsONStratosApp"
@@ -34,16 +54,28 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@android:style/Theme.Material.NoActionBar"
-        android:hardwareAccelerated="true">
+        android:hardwareAccelerated="false"
+        android:largeHeap="true"
+        android:installLocation="internalOnly"
+        tools:ignore="UnusedAttribute">
+
+        <!-- Metadata para compatibilidad con PaceOS/Huami -->
+        <meta-data android:name="com.huami.watch" android:value="true" />
+        <meta-data android:name="com.amazfit.stratos" android:value="true" />
 
         <activity
             android:name=".ui.StratosMainActivity"
             android:exported="true"
             android:screenOrientation="portrait"
+            android:launchMode="singleTask"
+            android:excludeFromRecents="false"
+            android:alwaysRetainTaskState="true"
+            android:stateNotNeeded="true"
             android:theme="@android:style/Theme.Material.NoActionBar">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
+                <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </activity>
 
@@ -51,22 +83,29 @@
             android:name=".service.StratosSensorService"
             android:enabled="true"
             android:exported="false"
-            android:foregroundServiceType="health">
+            android:foregroundServiceType="health"
+            android:stopWithTask="false"
+            tools:ignore="ForegroundServicePermission">
         </service>
 
         <service
             android:name=".service.StratosSyncService"
             android:enabled="true"
             android:exported="false"
-            android:foregroundServiceType="dataSync">
+            android:foregroundServiceType="dataSync"
+            android:stopWithTask="false"
+            tools:ignore="ForegroundServicePermission">
         </service>
 
         <receiver
             android:name=".service.StratosBootReceiver"
             android:enabled="true"
-            android:exported="true">
-            <intent-filter>
+            android:exported="true"
+            android:directBootAware="false">
+            <intent-filter android:priority="999">
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.QUICKBOOT_POWERON" />
+                <action android:name="com.htc.intent.action.QUICKBOOT_POWERON" />
             </intent-filter>
         </receiver>
 
