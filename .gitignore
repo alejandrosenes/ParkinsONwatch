@@ -3,6 +3,10 @@
 *.class
 *.o
 *.obj
+*.exe
+*.dll
+*.so
+*.a
 *.out
 build/
 target/
@@ -12,6 +16,13 @@ target/
 __pycache__/
 .mypy_cache/
 .pytest_cache/
+node_modules/
+venv/
+.venv/
+__pycache__/
+.mypy_cache/
+.pytest_cache/
+.gradle/
 
 # Editors
 .vscode/
@@ -23,7 +34,9 @@ __pycache__/
 *.log
 *.tmp
 
-# Environment
+# System
+.DS_Store
+Thumbs.db
 .env
 .env.local
 *.env.*
@@ -36,4 +49,12 @@ htmlcov/
 # OS specific
 .DS_Store
 Thumbs.db
+# Logs and temp files
+*.log
+*.tmp
+
+# Coverage
+coverage/
+htmlcov/
+.coverage
 ```
