@@ -12,6 +12,10 @@ build/
 target/
 
 # Dependencies
+.gradle/
+__pycache__/
+.mypy_cache/
+.pytest_cache/
 node_modules/
 venv/
 .venv/
@@ -26,6 +30,10 @@ __pycache__/
 *.swp
 *.swo
 
+# Logs and temp files
+*.log
+*.tmp
+
 # System
 .DS_Store
 Thumbs.db
@@ -33,6 +41,14 @@ Thumbs.db
 .env.local
 *.env.*
 
+# Coverage reports
+coverage/
+htmlcov/
+.coverage
+
+# OS specific
+.DS_Store
+Thumbs.db
 # Logs and temp files
 *.log
 *.tmp
