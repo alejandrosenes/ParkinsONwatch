@@ -11,7 +11,7 @@ android {
 
     defaultConfig {
         applicationId = "com.parkinson.watch"
-        minSdk = 25
+        minSdk = 22
         targetSdk = 34
         versionCode = 1
         versionName = "1.0.0"

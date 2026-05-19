@@ -12,7 +12,7 @@ android {
 
     defaultConfig {
         applicationId = "com.parkinson.hub"
-        minSdk = 26
+        minSdk = 22
         targetSdk = 34
         versionCode = 1
         versionName = "1.0.0"
@@ -107,9 +107,12 @@ dependencies {
     implementation("androidx.hilt:hilt-work:1.1.0")
     ksp("androidx.hilt:hilt-compiler:1.1.0")
 
-    implementation("com.google.android.gms:play-services-auth:20.7.0")
+    // Health Connect solo disponible para API 26+
+    if (System.getProperty("minSdk")?.toIntOrNull()?.let { it >= 26 } == true) {
+        implementation("androidx.health.connect:connect-client:1.1.0-alpha07")
+    }
 
-    implementation("androidx.health.connect:connect-client:1.1.0-alpha07")
+    implementation("com.google.android.gms:play-services-auth:20.7.0")
 
     implementation("com.google.code.gson:gson:2.10.1")
 

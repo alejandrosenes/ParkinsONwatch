@@ -1,60 +1,78 @@
 ```
-# Compiled and build artifacts
-*.class
-*.o
-*.obj
-*.exe
-*.dll
-*.so
-*.a
-*.out
+# Gradle
+.gradle/
 build/
 target/
 
 # Dependencies
-.gradle/
-__pycache__/
-.mypy_cache/
-.pytest_cache/
 node_modules/
+vendor/
+
+# Python (if present)
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
 venv/
 .venv/
-__pycache__/
-.mypy_cache/
-.pytest_cache/
-.gradle/
+.ENV
+.ENV.local
 
-# Editors
+# Logs
+*.log
+.log
+
+# IDE
 .vscode/
 .idea/
 *.swp
 *.swo
+*~
 
-# Logs and temp files
-*.log
-*.tmp
-
-# System
+# OS
 .DS_Store
 Thumbs.db
+
+# Environment
 .env
 .env.local
-*.env.*
-
-# Coverage reports
-coverage/
-htmlcov/
-.coverage
-
-# OS specific
-.DS_Store
-Thumbs.db
-# Logs and temp files
-*.log
-*.tmp
+.env.*
+!env.example
+!example.env
 
 # Coverage
+.coverage
 coverage/
 htmlcov/
-.coverage
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+
+# Archives
+*.zip
+*.tar
+*.gz
+*.tgz
+*.bz2
+*.xz
+*.7z
+*.rar
+*.zst
+*.lz4
+*.lzh
+*.cab
+*.arj
+*.rpm
+*.deb
+*.Z
+*.lz
+*.lzo
+*.tar.gz
+*.tar.bz2
+*.tar.xz
+*.tar.zst
 ```

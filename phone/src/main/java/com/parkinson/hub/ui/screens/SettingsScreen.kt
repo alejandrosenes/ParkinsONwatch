@@ -1,5 +1,6 @@
 package com.parkinson.hub.ui.screens
 
+import android.os.Build
 import androidx.biometric.BiometricManager
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -78,9 +79,17 @@ fun SettingsScreen(
     var showBiometricSetup by remember { mutableStateOf(false) }
 
     val biometricManager = remember { BiometricManager.from(context) }
-    val canUseBiometric = biometricManager.canAuthenticate(
-        BiometricManager.Authenticators.BIOMETRIC_STRONG or BiometricManager.Authenticators.BIOMETRIC_WEAK
-    ) == BiometricManager.BIOMETRIC_SUCCESS
+    val canUseBiometric = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+        @Suppress("DEPRECATION")
+        val authenticators = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            BiometricManager.Authenticators.BIOMETRIC_STRONG or BiometricManager.Authenticators.BIOMETRIC_WEAK
+        } else {
+            BiometricManager.Authenticators.BIOMETRIC_WEAK
+        }
+        biometricManager.canAuthenticate(authenticators) == BiometricManager.BIOMETRIC_SUCCESS
+    } else {
+        false
+    }
 
     LazyColumn(
         modifier = Modifier
